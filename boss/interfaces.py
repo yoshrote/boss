@@ -1,25 +1,28 @@
 class TaskFinder(object):
-    def find_tasks(self):
-        raise NotImplementedError('find_tasks')
+    def find(self):
+        raise NotImplementedError('find')
 
 
 class ParameterFinder(object):
-    def parameters(self):
-        raise NotImplementedError('parameters')
+    def find(self):
+        raise NotImplementedError('find')
 
 
 class Task(object):
     def run(self, args, kwargs):
         raise NotImplementedError('run')
 
+    def build_schedule(self):
+        raise NotImplementedError('build_schedule')
+
 
 class ScheduleFinder(object):
-    def find_schedules(self):
-        raise NotImplementedError('find_schedules')
+    def find(self):
+        raise NotImplementedError('find')
 
 
 class Scheduler(object):
-    def should_run(self, task, state):
+    def should_run(self, state):
         raise NotImplementedError('should_run')
 
 

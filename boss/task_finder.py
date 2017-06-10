@@ -19,7 +19,7 @@ class MemoryTaskFinder(TaskFinder):
     def __init__(self, config):
         self.tasks = config['task_finder']['tasks']
 
-    def find_tasks(self):
+    def find(self):
         for task in self.tasks:
             yield task
 
@@ -40,7 +40,7 @@ class MongoTaskFinder(TaskFinder):
         self.connection = config['task_finder']['connection']
         self.query = config['task_finder']['query']
 
-    def find_tasks(self):
+    def find(self):
         for task in self.connection.find(self.query):
             yield task
 
@@ -61,6 +61,6 @@ class SQLTaskFinder(TaskFinder):
         self.connection = config['task_finder']['connection']
         self.query = config['task_finder']['query']
 
-    def find_tasks(self):
+    def find(self):
         for task in self.connection.execute(self.query):
             yield task

@@ -1,0 +1,24 @@
+task_finder:
+  connection: sqlite:///Users/josh/Projects/boss/tasks.db
+  query: SELECT 
+schedule_finder:
+  connection:
+  query:
+scope_finder:
+  scopes:
+    user: [alice, bob, charlie, debra, ellen, frank, george]
+    
+
+
+task1:
+  schedule:
+    type: run every
+    frequency: 00:05:00
+task2:
+  schedule:
+    type: run at
+    target_time: 00:00:00
+    grace: 00:03:00
+  function:
+    path: boss.example:http_request
+    filter: boss.example:https_only

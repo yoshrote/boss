@@ -23,11 +23,11 @@ class Application(object):
     def run(self):
         """Main run loop."""
         while True:
-            schedules = self.schedule_finder.find_schedules()
-            for task in self.task_finder.find_tasks():
-                scheduler = task.pick_schedule(schedules)
-                for args, kwargs in self.parameter_finder.parameters(task):
+            for task_params in self.task_finder.find():
+                task = self.Task(self.config, task_params)
+                scheduler = task.build_schedule()
+                for args, kwargs in self.parameter_finder.find(task):
                     state = self.registry.get_state(task, args, kwargs)
-                    if scheduler.should_run(task, state):
+                    if scheduler.should_run(state):
                         self.registry.update_state(task, args, kwargs)
                         task.run(args, kwargs)
