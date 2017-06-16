@@ -2,10 +2,19 @@ from datetime import datetime, timedelta
 from .interfaces import Scheduler
 
 
+def pick_schedule(name):
+    if name == 'run at':
+        return RunAt
+    elif name == 'run every':
+        return RunEvery
+    else:
+        raise ValueError("{!r} not a valid scheduler".format(name))
+
+
 class RunEvery(Scheduler):
-    def __init__(self, config, task_config):
+    def __init__(self, config, schedule_config):
         self.config = config
-        self.task_config = task_config
+        self.frequency = schedule_config['frequency']
 
     def should_run(self, state):
         last_run = state.get('last_run')
@@ -13,26 +22,28 @@ class RunEvery(Scheduler):
             return True
 
         last_run_delta = datetime.utcnow() - datetime.utcfromtimestamp(last_run)
-        return last_run_delta >= self.task_config['frequency']
+        return last_run_delta >= self.frequency
 
 
 class RunAt(Scheduler):
     DEFAULT_GRACE = timedelta(hours=3)
     now = datetime.utcnow
 
-    def __init__(self, config, task_config):
+    def __init__(self, config, schedule_config):
         self.config = config
-        self.task_config = task_config
+        self.target_time = schedule_config['target_time']
+        self.grace = self.schedule_config.get('grace', self.DEFAULT_GRACE)
 
     def should_run(self, state):
         last_run = state.get('last_run')
         now = self.now()
-        target_time = self.task_config['target_time']
-        grace = self.task_config('grace', self.DEFAULT_GRACE)
+        target_time = self.target_time
 
-        now_within_grace = target_time <= now < target_time + grace
+        grace_period = target_time + self.grace
+
+        now_within_grace = target_time <= now < grace_period
         if not last_run:
             return now_within_grace
 
-        last_run_within_grace = target_time <= last_run < target_time + grace
+        last_run_within_grace = target_time <= last_run < grace_period
         return now_within_grace and not last_run_within_grace

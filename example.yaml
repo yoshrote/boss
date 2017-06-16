@@ -1,24 +1,32 @@
 task_finder:
   connection: sqlite:///Users/josh/Projects/boss/tasks.db
   query: SELECT 
-schedule_finder:
-  connection:
-  query:
 scope_finder:
   scopes:
-    user: [alice, bob, charlie, debra, ellen, frank, george]
+    user: [[/home/alice], [/home/bob], [/home/charlie], [/home/debra]]
+    urls:
+      - url: http://ign.com
+      - url: https://google.com
     
 
 
-task1:
-  schedule:
-    type: run every
-    frequency: 00:05:00
-task2:
-  schedule:
-    type: run at
-    target_time: 00:00:00
-    grace: 00:03:00
-  function:
-    path: boss.example:http_request
-    filter: boss.example:https_only
+tasks:
+  - name: task1
+    schedule:
+      type: run every
+      params:
+        frequency: 00:00:10
+    function: 
+      type: local
+      target: boss.__main__:heartbeat
+    scope: users
+  - name: task2
+    schedule:
+      type: run at
+      params:
+        target_time: 00:00:00
+        grace: 00:03:00
+    function:
+      type: remote
+      target: https://app.example.com
+    scope: urls
