@@ -1,16 +1,33 @@
 task_finder:
-  connection: sqlite:///Users/josh/Projects/boss/tasks.db
-  query: SELECT 
+  - type: connection
+    # label to reference shared connection resource
+    name: boss_db
+    # we want all tasks so no need to parameterize query
+    query: SELECT * FROM tasks WHERE enabled=true
+  - type: hardcoded
+    tasks: *sample_tasks
 scope_finder:
-  scopes:
-    user: [[/home/alice], [/home/bob], [/home/charlie], [/home/debra]]
-    urls:
-      - url: http://ign.com
-      - url: https://google.com
-    
+  - type: hardcoded
+    scopes:
+      dirs:
+          - dir: /home/alice
+          - dir: /home/bob
+          - dir: /home/charlie
+          - dir: /home/debra
+      urls:
+          - url: http://ign.com
+          - url: https://google.com
+  - type: connection
+    name: boss_db
+    # we want a particular scope so we need to parameterize query
+    query: SELECT * FROM scope WHERE name=?
 
+connections:
+  boss_db:
+      type: sqlite
+      connection: boss.db
 
-tasks:
+sample_tasks: &sample_tasks
   - name: task1
     schedule:
       type: run every
@@ -19,7 +36,7 @@ tasks:
     function: 
       type: local
       target: boss.__main__:heartbeat
-    scope: users
+    scope: dirs
   - name: task2
     schedule:
       type: run at
@@ -30,3 +47,12 @@ tasks:
       type: remote
       target: https://app.example.com
     scope: urls
+  - name: task3
+    schedule:
+      type: run every
+      params:
+        frequency: 00:00:01
+    function:
+      type: local
+      target: boss.__main__:echo
+    scope: lorum

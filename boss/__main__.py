@@ -27,5 +27,9 @@ def heartbeat(params):
     pass
 
 
+def echo(params):
+    print params
+
+
 app = MyApp(config)
 app.run()
