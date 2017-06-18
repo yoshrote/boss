@@ -1,6 +1,14 @@
 from .interfaces import TaskFinder
 
 
+def pick_task_finder(config, task_conf):
+    type_map = {
+        'hardcoded': MemoryTaskFinder,
+        'sqlite': SQLTaskFinder
+    }
+    return type_map[task_conf['type']](config, task_conf)
+
+
 class MemoryTaskFinder(TaskFinder):
     """TaskFinder backed nothing.
 
@@ -16,32 +24,11 @@ class MemoryTaskFinder(TaskFinder):
     }
     """
 
-    def __init__(self, config):
-        self.tasks = config['task_finder']['tasks']
+    def __init__(self, config, task_conf):
+        self.tasks = task_conf['tasks']
 
     def find(self):
         for task in self.tasks:
-            yield task
-
-
-class MongoTaskFinder(TaskFinder):
-    """TaskFinder backed by a Mongo Database.
-
-    Example config:
-    {
-        'task_finder': {
-            'connection': pymongo.MongoClient()['boss']['tasks'],
-            'query': {'enabled': True}
-        }
-    }
-    """
-
-    def __init__(self, config):
-        self.connection = config['task_finder']['connection']
-        self.query = config['task_finder']['query']
-
-    def find(self):
-        for task in self.connection.find(self.query):
             yield task
 
 
@@ -57,10 +44,11 @@ class SQLTaskFinder(TaskFinder):
     }
     """
 
-    def __init__(self, config):
-        self.connection = config['task_finder']['connection']
-        self.query = config['task_finder']['query']
+    def __init__(self, config, task_conf):
+        assert task_conf['connection']['type'] == 'sqlite', "Unsupported connection type"
+        self.connection = config.connections[task_conf['connection']]
+        self.query = task_conf['query']
 
-    def find(self):
+    def find(self, name):
         for task in self.connection.execute(self.query):
             yield task

@@ -6,6 +6,7 @@ task_finder:
     query: SELECT * FROM tasks WHERE enabled=true
   - type: hardcoded
     tasks: *sample_tasks
+
 scope_finder:
   - type: hardcoded
     scopes:
@@ -21,6 +22,12 @@ scope_finder:
     name: boss_db
     # we want a particular scope so we need to parameterize query
     query: SELECT * FROM scope WHERE name=?
+
+registry:
+  type: connection
+  name: boss_db
+  fetch_query: SELECT state FROM registry WHERE key=?
+  update_query: INSERT OR REPLACE INTO state (key, state) VALUES (?, ?)
 
 connections:
   boss_db:
