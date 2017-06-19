@@ -1,4 +1,5 @@
 import logging
+import time
 
 
 LOG = logging.getLogger(__name__)
@@ -31,6 +32,8 @@ class Application(object):
                     state = self.registry.get_state(task, params)
                     LOG.debug("state: %r", state)
                     if scheduler.should_run(state):
-                        LOG.info("about to run %s(%r)", task, params)
+                        LOG.info("about to run %s(%r)", task.name, params)
                         self.registry.update_state(task, params)
                         task.run(params)
+                        time.sleep(1)
+            time.sleep(10)

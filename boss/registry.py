@@ -1,6 +1,12 @@
+import json
+import logging
 from datetime import datetime
 
 from .interfaces import Registry
+from .utils import parse_datetime, stringify_datetime
+
+
+LOG = logging.getLogger(__name__)
 
 
 def initialize_registry(config, registry_conf):
@@ -43,19 +49,19 @@ class MemoryRegistry(Registry):
 
     def get_state(self, task, params):
         key = (task.name, frozenset(params.items()))
-        return self.states.get(key, {})
+        response = self.states.get(key, {})
+        return {} if not response else json.loads(response)
 
     def update_state(self, task, params):
         key = (task.name, frozenset(params.items()))
-        self.states[key] = {
-            "last_run": datetime.utcnow()
-        }
+        self.states[key] = json.dumps({
+            "last_run": stringify_datetime(datetime.utcnow())
+        })
 
 
 class SQLRegistry(Registry):
     """A sqlite backed Registry."""
     NAME = "sqlite"
-    DT_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
     @classmethod
     def from_configs(cls, config, registry_conf):
@@ -83,14 +89,10 @@ class SQLRegistry(Registry):
         cursor = self.connection.execute(self.fetch_q, (key,))
         response = cursor.fetchone()
         cursor.close()
-        if not response:
-            return {}
-        else:
-            response = json.loads(response['state'])
-            response['last_run'] = datetime.strptime(response['last_run'], self.DT_FORMAT)
+        return {} if not response else json.loads(response['state'])
 
     def update_state(self, task, params):
         key = json.dumps((task.name, sorted(params.items())))
         self.connection.execute(self.update_q, (key, json.dumps({
-            "last_run": datetime.utcnow().strftime(self.DT_FORMAT)
+            "last_run": stringify_datetime(datetime.utcnow())
         })))

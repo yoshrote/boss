@@ -5,7 +5,7 @@ from boss.app import Application
 from boss.config import Configurator
 from boss.task import Task
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
