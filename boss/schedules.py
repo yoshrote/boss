@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
-from .interfaces import Scheduler
 
+from .interfaces import Scheduler
 
 def pick_schedule(name):
     if name == 'run at':
@@ -32,7 +32,7 @@ class RunAt(Scheduler):
     def __init__(self, config, schedule_config):
         self.config = config
         self.target_time = schedule_config['target_time']
-        self.grace = self.schedule_config.get('grace', self.DEFAULT_GRACE)
+        self.grace = schedule_config.get('grace', self.DEFAULT_GRACE)
 
     def should_run(self, state):
         last_run = state.get('last_run')

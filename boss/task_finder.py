@@ -1,31 +1,47 @@
 from .interfaces import TaskFinder
 
 
-def pick_task_finder(config, task_conf):
-    type_map = {
-        'hardcoded': MemoryTaskFinder,
-        'sqlite': SQLTaskFinder
-    }
-    return type_map[task_conf['type']](config, task_conf)
+def initialize_task_finder(config, task_conf):
+    valid_task_finder_types = []
+    for name, value in globals().items():
+        try:
+            is_task_finder = issubclass(value, TaskFinder) and value is not TaskFinder
+        except TypeError:
+            pass
+        else:
+            if is_task_finder:
+                valid_task_finder_types.append(value.NAME)
+                if value.NAME == task_conf['type']:
+                    return value.from_configs(config, task_conf)
+    raise ValueError(
+        "unknown task type {!r}.\n"
+        "valid types: {}".format(
+            task_conf['type'], 
+            valid_task_finder_types
+        )
+    )
 
 
 class MemoryTaskFinder(TaskFinder):
-    """TaskFinder backed nothing.
+    """TaskFinder whose tasks are enumerated in configs."""
+    NAME = 'hardcoded'
 
-    Example config:
-    {
-        'task_finder': {
-            'tasks': [
-                Task(...),
-                Task(...),
-                Task(...),
-            ]
-        }
-    }
-    """
+    @classmethod
+    def from_configs(cls, config, task_conf):
+        """Initializes MemoryTaskFinder from configs.
 
-    def __init__(self, config, task_conf):
-        self.tasks = task_conf['tasks']
+        task_finder:
+            - type: hardcoded
+              tasks:
+                - Task(...)
+                - Task(...)
+        """
+        return cls(task_conf['tasks'])
+
+
+    def __init__(self, tasks):
+        """Find tasks directly from config."""
+        self.tasks = tasks
 
     def find(self):
         for task in self.tasks:
@@ -33,22 +49,29 @@ class MemoryTaskFinder(TaskFinder):
 
 
 class SQLTaskFinder(TaskFinder):
-    """TaskFinder backed by an SQL Database.
+    """TaskFinder backed by an SQL Database."""
+    NAME = 'sqlite'
 
-    Example config:
-    {
-        'task_finder': {
-            'connection': sqlite.Connection('tasks.db'),
-            'query': "SELECT * FROM tasks WHERE enabled=true"
-        }
-    }
-    """
+    @classmethod
+    def from_configs(cls, config, task_conf):
+        """Initializes SQLTaskFinder from configs.
 
-    def __init__(self, config, task_conf):
-        assert task_conf['connection']['type'] == 'sqlite', "Unsupported connection type"
-        self.connection = config.connections[task_conf['connection']]
-        self.query = task_conf['query']
+        task_finder:
+          - type: sql
+            # label to reference shared connection resource
+            name: boss_db
+            # we want all tasks so no need to parameterize query
+            query: SELECT * FROM tasks WHERE enabled=true
+        """
+        return cls(
+            config.connections[task_conf['connection']],
+            task_conf['query']
+        )
 
-    def find(self, name):
+    def __init__(self, connection, query):
+        self.connection = connection
+        self.query = query
+
+    def find(self):
         for task in self.connection.execute(self.query):
             yield task

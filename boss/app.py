@@ -1,30 +1,36 @@
+import logging
+
+
+LOG = logging.getLogger(__name__)
+
+
 class Application(object):
     """Configure and encapsulates the main loop."""
 
-    TaskFinder = None
     Task = None
-    ParameterFinder = None
-    Registry = None
 
-    def __init__(self, config):
+    def __init__(self, config, registry):
         """
         Initialize `Application`.
 
         Expects a dict-like objects `config`
         """
         self.config = config
-        self.task_finder = self.TaskFinder(self.config)
-        self.parameter_finder = self.ParameterFinder(self.config)
-        self.registry = self.Registry(self.config)
+        self.registry = registry
 
     def run(self):
         """Main run loop."""
         while True:
-            for task_params in self.task_finder.find():
+            LOG.debug("starting loop iteration")
+            for task_params in self.config.find_task_params():
+                LOG.debug("task_params: %r", task_params)
                 task = self.Task(self.config, task_params)
                 scheduler = task.scheduler
-                for kwargs in self.parameter_finder.find(task):
-                    state = self.registry.get_state(task, kwargs)
+                for params in self.config.find_params(task):
+                    LOG.debug("params: %r", params)
+                    state = self.registry.get_state(task, params)
+                    LOG.debug("state: %r", state)
                     if scheduler.should_run(state):
-                        self.registry.update_state(task, kwargs)
-                        task.run(kwargs)
+                        LOG.info("about to run %s(%r)", task, params)
+                        self.registry.update_state(task, params)
+                        task.run(params)

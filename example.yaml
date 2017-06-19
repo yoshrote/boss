@@ -1,39 +1,3 @@
-task_finder:
-  - type: connection
-    # label to reference shared connection resource
-    name: boss_db
-    # we want all tasks so no need to parameterize query
-    query: SELECT * FROM tasks WHERE enabled=true
-  - type: hardcoded
-    tasks: *sample_tasks
-
-scope_finder:
-  - type: hardcoded
-    scopes:
-      dirs:
-          - dir: /home/alice
-          - dir: /home/bob
-          - dir: /home/charlie
-          - dir: /home/debra
-      urls:
-          - url: http://ign.com
-          - url: https://google.com
-  - type: connection
-    name: boss_db
-    # we want a particular scope so we need to parameterize query
-    query: SELECT * FROM scope WHERE name=?
-
-registry:
-  type: connection
-  name: boss_db
-  fetch_query: SELECT state FROM registry WHERE key=?
-  update_query: INSERT OR REPLACE INTO state (key, state) VALUES (?, ?)
-
-connections:
-  boss_db:
-      type: sqlite
-      connection: boss.db
-
 sample_tasks: &sample_tasks
   - name: task1
     schedule:
@@ -63,3 +27,40 @@ sample_tasks: &sample_tasks
       type: local
       target: boss.__main__:echo
     scope: lorum
+
+task_finder:
+  # - type: sqlite
+  #   # label to reference shared connection resource
+  #   connection: boss_db
+  #   # we want all tasks so no need to parameterize query
+  #   query: SELECT * FROM tasks WHERE enabled=true
+  - type: hardcoded
+    tasks: *sample_tasks
+
+scope_finder:
+  - type: hardcoded
+    scopes:
+      dirs:
+          - dir: /home/alice
+          - dir: /home/bob
+          - dir: /home/charlie
+          - dir: /home/debra
+      urls:
+          - url: http://ign.com
+          - url: https://google.com
+  # - type: connection
+  #   name: boss_db
+  #   # we want a particular scope so we need to parameterize query
+  #   query: SELECT * FROM scope WHERE name=?
+
+registry:
+  type: memory
+  # type: sqlite
+  # connection: boss_db
+  # fetch_query: SELECT state FROM registry WHERE key=?
+  # update_query: INSERT OR REPLACE INTO state (key, state) VALUES (?, ?)
+
+connections:
+  boss_db:
+      type: sqlite
+      connection: boss.db

@@ -1,31 +1,51 @@
 from .interfaces import ScopeFinder
 
 
-def pick_scope_finder(config, scope_conf):
-    type_map = {
-        'hardcoded': MemoryScopeFinder,
-        'sqlite': SQLScopeFinder
-    }
-    return type_map[task_conf['type']](config, scope_conf)
+def initialize_scope_finder(config, scope_conf):
+    valid_scope_finder_types = []
+    for name, value in globals().items():
+        try:
+            is_scope_finder = issubclass(value, ScopeFinder) and value is not ScopeFinder
+        except TypeError:
+            pass
+        else:
+            if is_scope_finder:
+                valid_scope_finder_types.append(value.NAME)
+                if value.NAME == scope_conf['type']:
+                    return value.from_configs(config, scope_conf)
+
+    raise ValueError(
+        "unknown scope type {!r}.\n"
+        "valid types: {}".format(
+            scope_conf['type'], 
+            valid_scope_finder_types
+        )
+    )
 
 
 class MemoryScopeFinder(ScopeFinder):
-    """ScopeFinder backed nothing.
+    """ScopeFinder whose scopes are enumerated in configs."""
+    NAME = "hardcoded"
 
-    Example config:
-    {
-        'scope_finder': {
-            'scopes': [
-                Scope(...),
-                Scope(...),
-                Scope(...),
-            ]
-        }
-    }
-    """
+    @classmethod
+    def from_configs(cls, config, scope_conf):
+        """Initializes MemoryScopeFinder from configs.
 
-    def __init__(self, config, scope_conf):
-        self.scopes = scope_conf['scopes']
+        scope_finder:
+            - type: hardcoded
+              scopes:
+                scope1:
+                  - Scope(...)
+                  - Scope(...)
+                scope2:
+                  - Scope(...)
+        """
+        return cls(scope_conf['scopes'])
+
+
+    def __init__(self, scopes):
+        """Find scopes directly from config."""
+        self.scopes = scopes
 
     def find(self, name):
         for scope in self.scopes.get(name, []):
@@ -33,21 +53,28 @@ class MemoryScopeFinder(ScopeFinder):
 
 
 class SQLScopeFinder(ScopeFinder):
-    """ScopeFinder backed by an SQL Database.
+    """ScopeFinder backed by an SQL Database."""
+    NAME = "connection"
 
-    Example config:
-    {
-        'scope_finder': {
-            'connection': sqlite.Connection('scopes.db'),
-            'query': "SELECT * FROM scopes WHERE enabled=true"
-        }
-    }
-    """
+    @classmethod
+    def from_configs(cls, config, scope_conf):
+        """Initializes SQLScopeFinder from configs.
 
-    def __init__(self, config, scope_conf):
-        assert scope_conf['connection']['type'] == 'sqlite', "Unsupported connection type"
-        self.connection = config.connections[scope_conf['connection']]
-        self.query = scope_conf['query']
+        scope_finder:
+            - type: connection
+              name: boss_db
+              query: "SELECT * FROM scopes WHERE enabled=true"
+        """
+
+        return cls(
+            config.connections[scope_conf['name']],
+            scope_conf['query']
+        )
+
+
+    def __init__(self, connection, query):
+        self.connection = connection
+        self.query = query
 
     def find(self, name):
         for scope in self.connection.execute(self.query, (name,)):

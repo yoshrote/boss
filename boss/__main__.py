@@ -1,9 +1,11 @@
 import argparse
 import logging
 
-from .app import Application
-from .config import Configurator
+from boss.app import Application
+from boss.config import Configurator
+from boss.task import Task
 
+logging.basicConfig(level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
@@ -17,10 +19,7 @@ config = Configurator.from_file(args.config)
 
 
 class MyApp(Application):
-    TaskFinder = config.task_finder
-    Task = config.task
-    ParameterFinder = config.scope_finder
-    Registry = config.registry
+    Task = Task
 
 
 def heartbeat(params):
@@ -31,5 +30,5 @@ def echo(params):
     print params
 
 
-app = MyApp(config)
+app = MyApp(config, config.registry)
 app.run()

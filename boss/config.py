@@ -1,9 +1,13 @@
+import logging
 import sqlite3
 import yaml
 
-from .registry import pick_registry
-from .scope_finder import pick_scope_finder
-from .task_finder import pick_task_finder
+from .registry import initialize_registry
+from .scope_finder import initialize_scope_finder
+from .task_finder import initialize_task_finder
+
+
+LOG = logging.getLogger(__name__)
 
 
 class Configurator(object):
@@ -23,25 +27,30 @@ class Configurator(object):
     @property
     def registry(self):
         if not self._registry:
-            self._registry = pick_registry(self, self.registry_config)
+            LOG.info('initializing registry: %r', self.registry_config)
+            self._registry = initialize_registry(self, self.registry_config)
         return self._registry
 
     @property
     def task_finders(self):
         if not self._task_finders:
-            self._task_finders = [
-                pick_task_finder(self, task_conf)
-                for task_conf in self.task_configs
-            ]
+            self._task_finders = []
+            for task_conf in self.task_configs:
+                LOG.info('initializing task finder: %r', task_conf)
+                self._task_finders.append(
+                    initialize_task_finder(self, task_conf)
+                )
         return self._task_finders
 
     @property
     def scope_finders(self):
         if not self._scope_finders:
-            self._scope_finders = [
-                pick_scope_finder(self, scope_conf)
-                for scope_conf in self.scope_configs
-            ]
+            self._scope_finders = []
+            for scope_conf in self.scope_configs:
+                LOG.info('initializing scope finder: %r', scope_conf)
+                self._scope_finders.append(
+                    initialize_scope_finder(self, scope_conf)
+                )
         return self._scope_finders
 
     @classmethod
@@ -56,14 +65,15 @@ class Configurator(object):
 
         return cls(
             connections=connection_configs,
-            task_finders=task_finder_configs,
-            scope_finders=scope_finder_configs
+            task_configs=task_finder_configs,
+            scope_configs=scope_finder_configs,
+            registry_config=registry_config
         )
 
-    def find_tasks(self):
+    def find_task_params(self):
         for task_finder in self.task_finders:
-            for task in task_finder.find():
-                yield task
+            for task_param in task_finder.find():
+                yield task_param
 
     def find_params(self, task):
         for scope_finder in self.scope_finders:

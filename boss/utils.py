@@ -5,7 +5,7 @@ import requests
 
 
 def import_function(func):
-    name, _, func_name = func.split(':')
+    name, _, func_name = func.partition(':')
     module = importlib.import_module(name)
     return getattr(module, func_name)
 

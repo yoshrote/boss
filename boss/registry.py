@@ -3,64 +3,83 @@ from datetime import datetime
 from .interfaces import Registry
 
 
-def pick_scope_finder(config, registry_conf):
-    type_map = {
-        'hardcoded': MemoryRegistry,
-        'sqlite': SQLRegistry
-    }
-    return type_map[task_conf['type']](config, registry_conf)
+def initialize_registry(config, registry_conf):
+    valid_registry_types = []
+    for name, value in globals().items():
+        try:
+            is_registry = issubclass(value, Registry) and value is not Registry
+        except TypeError:
+            pass
+        else:
+            if is_registry:
+                valid_registry_types.append(value.NAME)
+                if value.NAME == registry_conf['type']:
+                    return value.from_configs(config, registry_conf)
+
+    raise ValueError(
+        "unknown registry type {!r}.\n"
+        "valid types: {}".format(
+            registry_conf['type'], 
+            valid_registry_types
+        )
+    )
 
 
 class MemoryRegistry(Registry):
-    """Registry backed nothing.
+    """An ephemeral Registry."""
+    NAME = "memory"
 
-    Example config:
-    {
-        'scope_finder': {
-            'scopes': [
-                Scope(...),
-                Scope(...),
-                Scope(...),
-            ]
-        }
-    }
-    """
+    @classmethod
+    def from_configs(cls, config, registry_conf):
+        """Initializes MemoryRegistry from configs.
 
-    def __init__(self, config, registry_conf):
+        registry:
+          type: memory
+        """
+        return cls()
+
+    def __init__(self):
         self.states = {}
 
-    def get_state(self, task, kwargs):
-        key = (task.name, frozenset(kwargs.items()))
+    def get_state(self, task, params):
+        key = (task.name, frozenset(params.items()))
         return self.states.get(key, {})
 
-    def update_state(self, task, kwargs):
-        key = (task.name, frozenset(kwargs.items()))
-        return self.states[key] = {
+    def update_state(self, task, params):
+        key = (task.name, frozenset(params.items()))
+        self.states[key] = {
             "last_run": datetime.utcnow()
         }
 
 
 class SQLRegistry(Registry):
-    """Registry backed by an SQL Database.
-
-    Example config:
-    {
-        'registry': {
-            'connection': sqlite.Connection('scopes.db'),
-            'query': "SELECT * FROM scopes WHERE enabled=true"
-        }
-    }
-    """
+    """A sqlite backed Registry."""
+    NAME = "sqlite"
     DT_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
-    def __init__(self, config, registry_conf):
-        assert registry_conf['connection']['type'] == 'sqlite', "Unsupported connection type"
-        self.connection = config.connections[registry_conf['connection']]
-        self.fetch_q = registry_conf['fetch_query']
-        self.update_q = registry_conf['update_query']
+    @classmethod
+    def from_configs(cls, config, registry_conf):
+        """Initializes SQLRegistry from configs.
 
-    def get_state(self, task, kwargs):
-        key = json.dumps((task.name, sorted(kwargs.items())))
+        registry:
+          type: sqlite
+          name: boss_db
+          fetch_query: SELECT state FROM registry WHERE key=?
+          update_query: INSERT OR REPLACE INTO state (key, state) VALUES (?, ?)
+        """
+        assert registry_conf['type'] == 'sqlite', "Unsupported connection type"
+        connection = config.connections[registry_conf['connection']]
+        fetch_q = registry_conf['fetch_query']
+        update_q = registry_conf['update_query']
+        return cls(connection, fetch_q, update_q)
+
+    def __init__(self, connection, fetch_q, update_q):
+        self.connection = connection
+        self.fetch_q = fetch_q
+        self.update_q = update_q
+
+    def get_state(self, task, params):
+        key = json.dumps((task.name, sorted(params.items())))
         cursor = self.connection.execute(self.fetch_q, (key,))
         response = cursor.fetchone()
         cursor.close()
@@ -70,8 +89,8 @@ class SQLRegistry(Registry):
             response = json.loads(response['state'])
             response['last_run'] = datetime.strptime(response['last_run'], self.DT_FORMAT)
 
-    def update_state(self, task, kwargs):
-        key = json.dumps((task.name, sorted(kwargs.items())))
+    def update_state(self, task, params):
+        key = json.dumps((task.name, sorted(params.items())))
         self.connection.execute(self.update_q, (key, json.dumps({
             "last_run": datetime.utcnow().strftime(self.DT_FORMAT)
         })))

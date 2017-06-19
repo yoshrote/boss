@@ -1,5 +1,10 @@
+import logging
+
 from .schedules import pick_schedule
 from .utils import import_function, request_maker
+
+
+LOG = logging.getLogger(__name__)
 
 
 class Task(object):
@@ -20,13 +25,14 @@ class Task(object):
         )
 
     def build_func(self, func_config):
+        LOG.debug("building function: %r", func_config)
         func_type = func_config['type']
         if func_type == 'local':
             return import_function(func_config['target'])
-        elif func_type == 'local':
+        elif func_type == 'remote':
             return request_maker(func_config['target'])
         else:
             raise ValueError("{!r} is not a valid function type".format(func_type))
 
-    def run(self, kwargs):
-        self.func(kwargs)
+    def run(self, params):
+        self.func(params)
