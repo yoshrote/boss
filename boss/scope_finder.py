@@ -19,7 +19,8 @@ def initialize_scope_finder(config, scope_conf):
 
     try:
         klass = import_function(scope_conf['type'])
-    except ImportError:
+        assert issubclass(klass, ScopeFinder) and klass is not ScopeFinder
+    except (ImportError, AssertionError):
         pass
     else:
         return klass.from_configs(config, scope_conf)

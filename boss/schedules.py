@@ -15,8 +15,10 @@ def pick_schedule(name):
         return RunEvery
     else:
         try:
-            return import_function(name)
-        except ImportError:
+            klass = import_function(name)
+            assert issubclass(klass, Scheduler) and klass is not Scheduler
+            return klass
+        except (ImportError, AssertionError):
             raise ValueError("{!r} not a valid scheduler".format(name))
 
 

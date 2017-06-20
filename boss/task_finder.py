@@ -19,7 +19,8 @@ def initialize_task_finder(config, task_conf):
 
     try:
         klass = import_function(task_conf['type'])
-    except ImportError:
+        assert issubclass(klass, TaskFinder) and klass is not TaskFinder
+    except (ImportError, AssertionError):
         pass
     else:
         return klass.from_configs(config, task_conf)

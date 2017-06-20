@@ -24,7 +24,8 @@ def initialize_registry(config, registry_conf):
 
     try:
         klass = import_function(registry_conf['type'])
-    except ImportError:
+        assert issubclass(klass, Registry) and klass is not Registry
+    except (ImportError, AssertionError):
         pass
     else:
         return klass.from_configs(config, registry_conf)
