@@ -1,6 +1,7 @@
 import json
 
 from .interfaces import ScopeFinder
+from .utils import import_function
 
 
 def initialize_scope_finder(config, scope_conf):
@@ -16,10 +17,17 @@ def initialize_scope_finder(config, scope_conf):
                 if value.NAME == scope_conf['type']:
                     return value.from_configs(config, scope_conf)
 
+    try:
+        klass = import_function(scope_conf['type'])
+    except ImportError:
+        pass
+    else:
+        return klass.from_configs(config, scope_conf)
+
     raise ValueError(
         "unknown scope type {!r}.\n"
         "valid types: {}".format(
-            scope_conf['type'], 
+            scope_conf['type'],
             valid_scope_finder_types
         )
     )

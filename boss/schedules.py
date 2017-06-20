@@ -1,8 +1,8 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from .interfaces import Scheduler
-from .utils import parse_datetime, parse_time, parse_timedelta, stringify_datetime
+from .utils import import_function, parse_datetime, parse_time, parse_timedelta
 
 
 LOG = logging.getLogger(__name__)
@@ -14,11 +14,15 @@ def pick_schedule(name):
     elif name == 'run every':
         return RunEvery
     else:
-        raise ValueError("{!r} not a valid scheduler".format(name))
+        try:
+            return import_function(name)
+        except ImportError:
+            raise ValueError("{!r} not a valid scheduler".format(name))
 
 
 class RunEvery(Scheduler):
     DEFAULT_LAST_RUN = "1970-01-01T00:00:00Z"
+
     def __init__(self, config, schedule_config):
         self.config = config
         self.frequency = parse_timedelta(schedule_config['frequency'])

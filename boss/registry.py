@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 
 from .interfaces import Registry
-from .utils import parse_datetime, stringify_datetime
+from .utils import import_function, parse_datetime, stringify_datetime
 
 
 LOG = logging.getLogger(__name__)
@@ -22,10 +22,17 @@ def initialize_registry(config, registry_conf):
                 if value.NAME == registry_conf['type']:
                     return value.from_configs(config, registry_conf)
 
+    try:
+        klass = import_function(registry_conf['type'])
+    except ImportError:
+        pass
+    else:
+        return klass.from_configs(config, registry_conf)
+
     raise ValueError(
         "unknown registry type {!r}.\n"
         "valid types: {}".format(
-            registry_conf['type'], 
+            registry_conf['type'],
             valid_registry_types
         )
     )
@@ -50,7 +57,12 @@ class MemoryRegistry(Registry):
     def get_state(self, task, params):
         key = (task.name, frozenset(params.items()))
         response = self.states.get(key, {})
-        return {} if not response else json.loads(response)
+        if not response:
+            return {}
+        else:
+            response = json.loads(response)
+            response['last_run'] = parse_datetime(response['last_run'])
+            return response
 
     def update_state(self, task, params):
         key = (task.name, frozenset(params.items()))
@@ -100,7 +112,12 @@ class SQLRegistry(Registry):
         cursor = self.connection.execute(self.fetch_q, (key,))
         response = cursor.fetchone()
         cursor.close()
-        return {} if not response else json.loads(response['state'])
+        if not response:
+            return {}
+        else:
+            response = json.loads(response['state'])
+            response['last_run'] = parse_datetime(response['last_run'])
+            return response
 
     def update_state(self, task, params):
         key = json.dumps((task.name, sorted(params.items())))

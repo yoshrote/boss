@@ -1,6 +1,7 @@
 import json
 
 from .interfaces import TaskFinder
+from .utils import import_function
 
 
 def initialize_task_finder(config, task_conf):
@@ -15,10 +16,18 @@ def initialize_task_finder(config, task_conf):
                 valid_task_finder_types.append(value.NAME)
                 if value.NAME == task_conf['type']:
                     return value.from_configs(config, task_conf)
+
+    try:
+        klass = import_function(task_conf['type'])
+    except ImportError:
+        pass
+    else:
+        return klass.from_configs(config, task_conf)
+
     raise ValueError(
         "unknown task type {!r}.\n"
         "valid types: {}".format(
-            task_conf['type'], 
+            task_conf['type'],
             valid_task_finder_types
         )
     )
@@ -64,7 +73,7 @@ class SQLTaskFinder(TaskFinder):
             )
             """)
             cursor.execute("""
-            CREATE INDEX IF NOT EXISTS enabled_tasks 
+            CREATE INDEX IF NOT EXISTS enabled_tasks
             ON scopes (enabled)
             """)
             cursor.close()
