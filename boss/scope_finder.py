@@ -1,3 +1,5 @@
+import json
+
 from .interfaces import ScopeFinder
 
 
@@ -42,7 +44,6 @@ class MemoryScopeFinder(ScopeFinder):
         """
         return cls(scope_conf['scopes'])
 
-
     def __init__(self, scopes):
         """Find scopes directly from config."""
         self.scopes = scopes
@@ -54,7 +55,21 @@ class MemoryScopeFinder(ScopeFinder):
 
 class SQLScopeFinder(ScopeFinder):
     """ScopeFinder backed by an SQL Database."""
-    NAME = "connection"
+    NAME = "sqlite"
+
+    @classmethod
+    def create_table(cls, connection):
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+            CREATE TABLE scopes (
+                name TEXT PRIMARY KEY,
+                params TEXT,
+            )
+            """)
+            cursor.close()
+        except:
+            pass
 
     @classmethod
     def from_configs(cls, config, scope_conf):
@@ -63,19 +78,15 @@ class SQLScopeFinder(ScopeFinder):
         scope_finder:
             - type: connection
               name: boss_db
-              query: "SELECT * FROM scopes WHERE enabled=true"
         """
+        connection = config.connections[scope_conf['name']]
+        cls.create_table(connection)
+        return cls(connection)
 
-        return cls(
-            config.connections[scope_conf['name']],
-            scope_conf['query']
-        )
-
-
-    def __init__(self, connection, query):
+    def __init__(self, connection):
         self.connection = connection
-        self.query = query
+        self.query = "SELECT params FROM scope WHERE name=?"
 
     def find(self, name):
-        for scope in self.connection.execute(self.query, (name,)):
-            yield scope
+        for row in self.connection.execute(self.query, (name,)):
+            yield json.loads(row['params'])

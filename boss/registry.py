@@ -64,25 +64,36 @@ class SQLRegistry(Registry):
     NAME = "sqlite"
 
     @classmethod
+    def create_table(cls, connection):
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+            CREATE TABLE registry (
+                key TEXT PRIMARY KEY,
+                state TEXT
+            )
+            """)
+            cursor.close()
+        except:
+            pass
+
+    @classmethod
     def from_configs(cls, config, registry_conf):
         """Initializes SQLRegistry from configs.
 
         registry:
           type: sqlite
           name: boss_db
-          fetch_query: SELECT state FROM registry WHERE key=?
-          update_query: INSERT OR REPLACE INTO state (key, state) VALUES (?, ?)
         """
         assert registry_conf['type'] == 'sqlite', "Unsupported connection type"
         connection = config.connections[registry_conf['connection']]
-        fetch_q = registry_conf['fetch_query']
-        update_q = registry_conf['update_query']
-        return cls(connection, fetch_q, update_q)
+        cls.create_table(connection)
+        return cls(connection)
 
-    def __init__(self, connection, fetch_q, update_q):
+    def __init__(self, connection):
         self.connection = connection
-        self.fetch_q = fetch_q
-        self.update_q = update_q
+        self.fetch_q = "SELECT state FROM registry WHERE key=?"
+        self.update_q = "INSERT OR REPLACE INTO state (key, state) VALUES (?, ?)"
 
     def get_state(self, task, params):
         key = json.dumps((task.name, sorted(params.items())))

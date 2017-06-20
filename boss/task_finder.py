@@ -1,3 +1,5 @@
+import json
+
 from .interfaces import TaskFinder
 
 
@@ -38,7 +40,6 @@ class MemoryTaskFinder(TaskFinder):
         """
         return cls(task_conf['tasks'])
 
-
     def __init__(self, tasks):
         """Find tasks directly from config."""
         self.tasks = tasks
@@ -53,25 +54,42 @@ class SQLTaskFinder(TaskFinder):
     NAME = 'sqlite'
 
     @classmethod
+    def create_table(cls, connection):
+        try:
+            cursor = connection.cursor()
+            cursor.execute("""
+            CREATE TABLE scopes (
+                task TEXT,
+                enabled BOOLEAN,
+            )
+            """)
+            cursor.execute("""
+            CREATE INDEX IF NOT EXISTS enabled_tasks 
+            ON scopes (enabled)
+            """)
+            cursor.close()
+        except:
+            pass
+
+    @classmethod
     def from_configs(cls, config, task_conf):
         """Initializes SQLTaskFinder from configs.
 
         task_finder:
           - type: sql
-            # label to reference shared connection resource
             name: boss_db
-            # we want all tasks so no need to parameterize query
-            query: SELECT * FROM tasks WHERE enabled=true
         """
+        connection = config.connections[task_conf['connection']]
+        cls.create_table(connection)
         return cls(
-            config.connections[task_conf['connection']],
+            connection,
             task_conf['query']
         )
 
     def __init__(self, connection, query):
         self.connection = connection
-        self.query = query
+        self.query = "SELECT task FROM tasks WHERE enabled=true"
 
     def find(self):
-        for task in self.connection.execute(self.query):
-            yield task
+        for row in self.connection.execute(self.query):
+            yield json.loads(row['task'])
