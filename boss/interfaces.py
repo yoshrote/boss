@@ -1,6 +1,6 @@
 class TaskFinder(object):
     NAME = None
-    
+
     @classmethod
     def from_configs(cls, config, task_conf):
         raise NotImplementedError('from_configs')
@@ -11,7 +11,7 @@ class TaskFinder(object):
 
 class ScopeFinder(object):
     NAME = None
-    
+
     @classmethod
     def from_configs(cls, config, scope_conf):
         raise NotImplementedError('from_configs')

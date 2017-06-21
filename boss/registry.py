@@ -41,11 +41,12 @@ def initialize_registry(config, registry_conf):
 
 class MemoryRegistry(Registry):
     """An ephemeral Registry."""
+
     NAME = "memory"
 
     @classmethod
     def from_configs(cls, config, registry_conf):
-        """Initializes MemoryRegistry from configs.
+        """Initialize MemoryRegistry from configs.
 
         registry:
           type: memory
@@ -74,6 +75,7 @@ class MemoryRegistry(Registry):
 
 class SQLRegistry(Registry):
     """A sqlite backed Registry."""
+
     NAME = "sqlite"
 
     @classmethod
@@ -81,7 +83,7 @@ class SQLRegistry(Registry):
         try:
             cursor = connection.cursor()
             cursor.execute("""
-            CREATE TABLE registry (
+            CREATE TABLE IF NOT EXISTS registry (
                 key TEXT PRIMARY KEY,
                 state TEXT
             )
@@ -92,7 +94,7 @@ class SQLRegistry(Registry):
 
     @classmethod
     def from_configs(cls, config, registry_conf):
-        """Initializes SQLRegistry from configs.
+        """Initialize SQLRegistry from configs.
 
         registry:
           type: sqlite

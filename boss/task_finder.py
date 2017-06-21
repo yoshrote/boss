@@ -36,11 +36,12 @@ def initialize_task_finder(config, task_conf):
 
 class MemoryTaskFinder(TaskFinder):
     """TaskFinder whose tasks are enumerated in configs."""
+
     NAME = 'hardcoded'
 
     @classmethod
     def from_configs(cls, config, task_conf):
-        """Initializes MemoryTaskFinder from configs.
+        """Initialize MemoryTaskFinder from configs.
 
         task_finder:
             - type: hardcoded
@@ -61,6 +62,7 @@ class MemoryTaskFinder(TaskFinder):
 
 class SQLTaskFinder(TaskFinder):
     """TaskFinder backed by an SQL Database."""
+
     NAME = 'sqlite'
 
     @classmethod
@@ -68,14 +70,14 @@ class SQLTaskFinder(TaskFinder):
         try:
             cursor = connection.cursor()
             cursor.execute("""
-            CREATE TABLE scopes (
+            CREATE TABLE IF NOT EXISTS tasks (
                 task TEXT,
                 enabled BOOLEAN,
             )
             """)
             cursor.execute("""
             CREATE INDEX IF NOT EXISTS enabled_tasks
-            ON scopes (enabled)
+            ON tasks (enabled)
             """)
             cursor.close()
         except:
@@ -83,7 +85,7 @@ class SQLTaskFinder(TaskFinder):
 
     @classmethod
     def from_configs(cls, config, task_conf):
-        """Initializes SQLTaskFinder from configs.
+        """Initialize SQLTaskFinder from configs.
 
         task_finder:
           - type: sql

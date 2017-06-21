@@ -36,11 +36,12 @@ def initialize_scope_finder(config, scope_conf):
 
 class MemoryScopeFinder(ScopeFinder):
     """ScopeFinder whose scopes are enumerated in configs."""
+
     NAME = "hardcoded"
 
     @classmethod
     def from_configs(cls, config, scope_conf):
-        """Initializes MemoryScopeFinder from configs.
+        """Initialize MemoryScopeFinder from configs.
 
         scope_finder:
             - type: hardcoded
@@ -64,6 +65,7 @@ class MemoryScopeFinder(ScopeFinder):
 
 class SQLScopeFinder(ScopeFinder):
     """ScopeFinder backed by an SQL Database."""
+
     NAME = "sqlite"
 
     @classmethod
@@ -71,7 +73,7 @@ class SQLScopeFinder(ScopeFinder):
         try:
             cursor = connection.cursor()
             cursor.execute("""
-            CREATE TABLE scopes (
+            CREATE TABLE IF NOT EXISTS scopes (
                 name TEXT PRIMARY KEY,
                 params TEXT,
             )
@@ -82,7 +84,7 @@ class SQLScopeFinder(ScopeFinder):
 
     @classmethod
     def from_configs(cls, config, scope_conf):
-        """Initializes SQLScopeFinder from configs.
+        """Initialize SQLScopeFinder from configs.
 
         scope_finder:
             - type: connection
