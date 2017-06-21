@@ -34,6 +34,44 @@ def import_function(func):
         raise ImportError("No function named {}".format(func_name))
 
 
+def iterate_subclasses(klass_map, target_klass):
+    for name, value in klass_map.items():
+        try:
+            klass_is_subclass = class_is_subclass(value, target_klass)
+        except TypeError:
+            pass
+        else:
+            if klass_is_subclass:
+                yield value
+
+
+def class_is_subclass(value, target_klass):
+    return issubclass(value, target_klass) and value is not target_klass
+
+
+def get_class_from_type_value(type_name, target_klass, conf, config, klass_map):
+    valid_klasses = []
+    klass_type = conf['type']
+    for klass in iterate_subclasses(klass_map, target_klass):
+        valid_klasses.append(klass.NAME)
+        if klass.NAME == klass_type:
+            return klass.from_configs(config, conf)
+
+    if ':' in klass_type:
+        klass = import_function(klass_type)
+        if class_is_subclass(klass, target_klass):
+            return klass.from_configs(config, conf)
+
+    raise ValueError(
+        "unknown {} type {!r}.\n"
+        "valid types: {}".format(
+            type_name,
+            klass_type,
+            valid_klasses
+        )
+    )
+
+
 class request_maker(object):
     def __init__(self, target):
         self.target = target

@@ -3,39 +3,23 @@ import logging
 from datetime import datetime
 
 from .interfaces import Registry
-from .utils import import_function, parse_datetime, stringify_datetime
+from .utils import (
+    get_class_from_type_value,
+    parse_datetime,
+    stringify_datetime
+)
 
 
 LOG = logging.getLogger(__name__)
 
 
 def initialize_registry(config, registry_conf):
-    valid_registry_types = []
-    for name, value in globals().items():
-        try:
-            is_registry = issubclass(value, Registry) and value is not Registry
-        except TypeError:
-            pass
-        else:
-            if is_registry:
-                valid_registry_types.append(value.NAME)
-                if value.NAME == registry_conf['type']:
-                    return value.from_configs(config, registry_conf)
-
-    try:
-        klass = import_function(registry_conf['type'])
-        assert issubclass(klass, Registry) and klass is not Registry
-    except (ImportError, AssertionError):
-        pass
-    else:
-        return klass.from_configs(config, registry_conf)
-
-    raise ValueError(
-        "unknown registry type {!r}.\n"
-        "valid types: {}".format(
-            registry_conf['type'],
-            valid_registry_types
-        )
+    return get_class_from_type_value(
+        'registry',
+        Registry,
+        registry_conf,
+        config,
+        globals()
     )
 
 

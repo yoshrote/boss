@@ -1,36 +1,16 @@
 import json
 
 from .interfaces import TaskFinder
-from .utils import import_function
+from .utils import get_class_from_type_value
 
 
 def initialize_task_finder(config, task_conf):
-    valid_task_finder_types = []
-    for name, value in globals().items():
-        try:
-            is_task_finder = issubclass(value, TaskFinder) and value is not TaskFinder
-        except TypeError:
-            pass
-        else:
-            if is_task_finder:
-                valid_task_finder_types.append(value.NAME)
-                if value.NAME == task_conf['type']:
-                    return value.from_configs(config, task_conf)
-
-    try:
-        klass = import_function(task_conf['type'])
-        assert issubclass(klass, TaskFinder) and klass is not TaskFinder
-    except (ImportError, AssertionError):
-        pass
-    else:
-        return klass.from_configs(config, task_conf)
-
-    raise ValueError(
-        "unknown task type {!r}.\n"
-        "valid types: {}".format(
-            task_conf['type'],
-            valid_task_finder_types
-        )
+    return get_class_from_type_value(
+        'task',
+        TaskFinder,
+        task_conf,
+        config,
+        globals()
     )
 
 
