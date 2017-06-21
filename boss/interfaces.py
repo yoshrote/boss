@@ -1,39 +1,64 @@
+from abc import ABCMeta, abstractmethod, abstractproperty
+
+
 class TaskFinder(object):
-    NAME = None
+    __metaclass__ = ABCMeta
+
+    @abstractproperty
+    def NAME(self):
+        return None
 
     @classmethod
+    @abstractmethod
     def from_configs(cls, config, task_conf):
-        raise NotImplementedError('from_configs')
+        return None
 
+    @abstractmethod
     def find(self):
-        raise NotImplementedError('find')
+        return []
 
 
 class ScopeFinder(object):
-    NAME = None
+    __metaclass__ = ABCMeta
+
+    @abstractproperty
+    def NAME(self):
+        return None
 
     @classmethod
+    @abstractmethod
     def from_configs(cls, config, scope_conf):
         raise NotImplementedError('from_configs')
 
+    @abstractmethod
     def find(self, task):
         raise NotImplementedError('find')
 
 
 class Scheduler(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def should_run(self, state):
         raise NotImplementedError('should_run')
 
 
 class Registry(object):
-    NAME = None
+    __metaclass__ = ABCMeta
+
+    @abstractproperty
+    def NAME(self):
+        return None
 
     @classmethod
+    @abstractmethod
     def from_configs(cls, config, registry_conf):
         raise NotImplementedError('from_configs')
 
+    @abstractmethod
     def get_state(self, task, params):
         raise NotImplementedError('get_state')
 
+    @abstractmethod
     def update_state(self, task, params):
         raise NotImplementedError('update_state')
