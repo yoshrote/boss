@@ -38,6 +38,11 @@ class ScopeFinder(object):
 class Scheduler(object):
     __metaclass__ = ABCMeta
 
+    @classmethod
+    @abstractmethod
+    def from_configs(cls, config, schedule_conf):
+        raise NotImplementedError('from_configs')
+
     @abstractmethod
     def should_run(self, state):
         raise NotImplementedError('should_run')

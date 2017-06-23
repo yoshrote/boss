@@ -8,31 +8,37 @@ from .utils import import_function, parse_datetime, parse_time, parse_timedelta
 LOG = logging.getLogger(__name__)
 
 
-def pick_schedule(name):
+def pick_schedule(config, schedule_config):
+    name = schedule_config['type']
     if name == 'run at':
-        return RunAt
+        return RunAt.from_config(config, schedule_config)
     elif name == 'run every':
-        return RunEvery
+        return RunEvery.from_config(config, schedule_config)
     else:
         try:
             klass = import_function(name)
             assert issubclass(klass, Scheduler) and klass is not Scheduler
-            return klass
+            return klass.from_config(config, schedule_config)
         except (ImportError, AssertionError):
             raise ValueError("{!r} not a valid scheduler".format(name))
 
 
 class RunEvery(Scheduler):
     DEFAULT_LAST_RUN = "1970-01-01T00:00:00Z"
+    now = datetime.utcnow
 
-    def __init__(self, config, schedule_config):
-        self.config = config
-        self.frequency = parse_timedelta(schedule_config['frequency'])
+    @classmethod
+    def from_config(cls, config, schedule_config):
+        frequency = parse_timedelta(schedule_config['frequency'])
+        return cls(frequency)
+
+    def __init__(self, frequency):
+        self.frequency = frequency
 
     def should_run(self, state):
         last_run = parse_datetime(state.get('last_run', self.DEFAULT_LAST_RUN))
 
-        last_run_delta = datetime.utcnow() - last_run
+        last_run_delta = self.now() - last_run
         return last_run_delta >= self.frequency
 
 
@@ -41,10 +47,15 @@ class RunAt(Scheduler):
     DEFAULT_LAST_RUN = "1970-01-01T00:00:00Z"
     now = datetime.utcnow
 
-    def __init__(self, config, schedule_config):
-        self.config = config
-        self.target_time = parse_time(schedule_config['target_time'])
-        self.grace = parse_timedelta(schedule_config.get('grace', self.DEFAULT_GRACE))
+    @classmethod
+    def from_config(cls, config, schedule_config):
+        target_time = parse_time(schedule_config['target_time'])
+        grace = parse_timedelta(schedule_config.get('grace', cls.DEFAULT_GRACE))
+        return cls(target_time, grace)
+
+    def __init__(self, target_time, grace):
+        self.target_time = target_time
+        self.grace = grace
 
     def should_run(self, state):
         now = self.now()

@@ -17,11 +17,8 @@ class Task(object):
         self.func = self.build_func(task_config['function'])
 
     def build_schedule(self, schedule_config):
-        schedule_klass = pick_schedule(
-            schedule_config['type']
-        )
-        return schedule_klass(
-            self.config, schedule_config['params']
+        return pick_schedule(
+            self.config, schedule_config
         )
 
     def build_func(self, func_config):
