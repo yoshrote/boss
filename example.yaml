@@ -4,7 +4,7 @@ sample_tasks: &sample_tasks
       type: run every
       params:
         frequency: 00:00:10
-    function: 
+    function:
       type: local
       target: boss.__main__:heartbeat
     scope: dirs
@@ -47,7 +47,7 @@ scope_finder:
           - url: http://ign.com
           - url: https://google.com
   # - type: sqlite
-  #   name: boss_db
+  #   connection: boss_db
 
 registry:
   type: memory

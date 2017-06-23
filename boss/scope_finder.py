@@ -70,7 +70,7 @@ class SQLScopeFinder(ScopeFinder):
             - type: connection
               name: boss_db
         """
-        connection = config.connections[scope_conf['name']]
+        connection = config.connections[scope_conf['connection']]
         cls.create_table(connection)
         return cls(connection)
 
