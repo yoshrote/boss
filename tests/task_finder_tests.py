@@ -41,7 +41,7 @@ class TaskFinderTests(unittest.TestCase):
             initialize_task_finder, mock_config, {'type': 'datetime:datetime'}
         )
         self.assertIsInstance(
-            initialize_task_finder(mock_config, {'type': '{}:{}'.format(__name__, 'SampleTaskFinder')}),
+            initialize_task_finder(mock_config, {'type': '{}:SampleTaskFinder'.format(__name__)}),
             SampleTaskFinder
         )
 

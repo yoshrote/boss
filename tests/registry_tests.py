@@ -44,6 +44,6 @@ class RegistryTests(unittest.TestCase):
             initialize_registry, mock_config, {'type': 'datetime:datetime'}
         )
         self.assertIsInstance(
-            initialize_registry(mock_config, {'type': '{}:{}'.format(__name__, 'SampleRegistry')}),
+            initialize_registry(mock_config, {'type': '{}:SampleRegistry'.format(__name__)}),
             SampleRegistry
         )

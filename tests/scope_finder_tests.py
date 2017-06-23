@@ -41,7 +41,7 @@ class ScopeFinderTests(unittest.TestCase):
             initialize_scope_finder, mock_config, {'type': 'datetime:datetime'}
         )
         self.assertIsInstance(
-            initialize_scope_finder(mock_config, {'type': '{}:{}'.format(__name__, 'SampleScopeFinder')}),
+            initialize_scope_finder(mock_config, {'type': '{}:SampleScopeFinder'.format(__name__)}),
             SampleScopeFinder
         )
 
