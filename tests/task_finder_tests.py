@@ -40,7 +40,6 @@ class TaskFinderTests(unittest.TestCase):
             mock_config,
             task_config
         )
-        sql_mock.reset()
 
         cursor_mock = sql_mock.cursor.return_value
         cursor_mock.execute.return_value = iter([

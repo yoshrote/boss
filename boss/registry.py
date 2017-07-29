@@ -24,6 +24,7 @@ def initialize_registry(config, registry_conf):
 
 class MemoryRegistry(Registry):
     """An ephemeral Registry."""
+    now = datetime.utcnow
 
     @classmethod
     def from_configs(cls, config, registry_conf):
@@ -37,8 +38,11 @@ class MemoryRegistry(Registry):
     def __init__(self):
         self.states = {}
 
+    def build_key(self, task, params):
+        return (task.name, frozenset(params.items()))
+
     def get_state(self, task, params):
-        key = (task.name, frozenset(params.items()))
+        key = self.build_key(task, params)
         response = self.states.get(key, {})
         if not response:
             return {}
@@ -48,28 +52,28 @@ class MemoryRegistry(Registry):
             return response
 
     def update_state(self, task, params):
-        key = (task.name, frozenset(params.items()))
+        key = self.build_key(task, params)
         self.states[key] = json.dumps({
-            "last_run": stringify_datetime(datetime.utcnow())
+            "last_run": stringify_datetime(self.now())
         })
 
 
 class SQLRegistry(Registry):
     """A sqlite backed Registry."""
+    now = datetime.utcnow
 
     @classmethod
     def create_table(cls, connection):
+        cursor = connection.cursor()
         try:
-            cursor = connection.cursor()
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS registry (
                 key TEXT PRIMARY KEY,
                 state TEXT
             )
             """)
+        finally:
             cursor.close()
-        except:
-            pass
 
     @classmethod
     def from_configs(cls, config, registry_conf):
@@ -90,10 +94,14 @@ class SQLRegistry(Registry):
         self.update_q = "INSERT OR REPLACE INTO state (key, state) VALUES (?, ?)"
 
     def get_state(self, task, params):
-        key = json.dumps((task.name, sorted(params.items())))
-        cursor = self.connection.execute(self.fetch_q, (key,))
-        response = cursor.fetchone()
-        cursor.close()
+        key = self.build_key(task, params)
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute(self.fetch_q, (key,))
+            response = cursor.fetchone()
+        finally:
+            cursor.close()
+
         if not response:
             return {}
         else:
@@ -101,8 +109,15 @@ class SQLRegistry(Registry):
             response['last_run'] = parse_datetime(response['last_run'])
             return response
 
+    def build_key(self, task, params):
+        return json.dumps((task.name, sorted(params.items())))
+
     def update_state(self, task, params):
-        key = json.dumps((task.name, sorted(params.items())))
-        self.connection.execute(self.update_q, (key, json.dumps({
-            "last_run": stringify_datetime(datetime.utcnow())
-        })))
+        key = self.build_key(task, params)
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute(self.update_q, (key, json.dumps({
+                "last_run": stringify_datetime(self.now())
+            })))
+        finally:
+            cursor.close()
