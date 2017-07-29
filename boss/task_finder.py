@@ -6,18 +6,15 @@ from .utils import get_class_from_type_value
 
 def initialize_task_finder(config, task_conf):
     return get_class_from_type_value(
-        'task',
+        'task_finder',
         TaskFinder,
         task_conf,
         config,
-        globals()
     )
 
 
 class MemoryTaskFinder(TaskFinder):
     """TaskFinder whose tasks are enumerated in configs."""
-
-    NAME = 'hardcoded'
 
     @classmethod
     def from_configs(cls, config, task_conf):
@@ -43,12 +40,10 @@ class MemoryTaskFinder(TaskFinder):
 class SQLTaskFinder(TaskFinder):
     """TaskFinder backed by an SQL Database."""
 
-    NAME = 'sqlite'
-
     @classmethod
     def create_table(cls, connection):
+        cursor = connection.cursor()
         try:
-            cursor = connection.cursor()
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS tasks (
                 task TEXT,
@@ -59,9 +54,8 @@ class SQLTaskFinder(TaskFinder):
             CREATE INDEX IF NOT EXISTS enabled_tasks
             ON tasks (enabled)
             """)
+        finally:
             cursor.close()
-        except:
-            pass
 
     @classmethod
     def from_configs(cls, config, task_conf):
@@ -74,14 +68,17 @@ class SQLTaskFinder(TaskFinder):
         connection = config.connections[task_conf['connection']]
         cls.create_table(connection)
         return cls(
-            connection,
-            task_conf['query']
+            connection
         )
 
-    def __init__(self, connection, query):
+    def __init__(self, connection):
         self.connection = connection
         self.query = "SELECT task FROM tasks WHERE enabled=true"
 
     def find(self):
-        for row in self.connection.execute(self.query):
-            yield json.loads(row['task'])
+        cursor = self.connection.cursor()
+        try:
+            for row in cursor.execute(self.query):
+                yield json.loads(row['task'])
+        finally:
+            cursor.close()

@@ -1,5 +1,6 @@
 import importlib
 import json
+import pkg_resources
 from datetime import datetime, timedelta, time
 
 import requests
@@ -42,34 +43,34 @@ def iterate_subclasses(klass_map, target_klass):
             pass
         else:
             if klass_is_subclass:
-                yield value
+                yield name, value
 
 
 def class_is_subclass(value, target_klass):
     return issubclass(value, target_klass) and value is not target_klass
 
 
-def get_class_from_type_value(type_name, target_klass, conf, config, klass_map):
-    valid_klasses = []
+def get_class_from_type_value(type_name, target_klass, conf, config):
+    klass_map = {
+        entry_point.name: entry_point.load()
+        for entry_point in pkg_resources.iter_entry_points("boss_{}".format(type_name))
+        if class_is_subclass(entry_point.load(), target_klass)
+    }
+
     klass_type = conf['type']
-    for klass in iterate_subclasses(klass_map, target_klass):
-        valid_klasses.append(klass.NAME)
-        if klass.NAME == klass_type:
-            return klass.from_configs(config, conf)
-
-    if ':' in klass_type:
-        klass = import_function(klass_type)
-        if class_is_subclass(klass, target_klass):
-            return klass.from_configs(config, conf)
-
-    raise ValueError(
-        "unknown {} type {!r}.\n"
-        "valid types: {}".format(
-            type_name,
-            klass_type,
-            valid_klasses
+    try:
+        klass = klass_map[klass_type]
+    except (KeyError, ValueError):
+        raise ValueError(
+            "unknown {} type {!r}.\n"
+            "valid types: {}".format(
+                type_name,
+                klass_type,
+                klass_map.keys()
+            )
         )
-    )
+    else:
+        return klass.from_configs(config, conf)
 
 
 class request_maker(object):

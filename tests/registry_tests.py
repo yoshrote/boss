@@ -3,22 +3,8 @@ import unittest
 import mock
 
 from boss.config import Configurator
-from boss.interfaces import Registry
+
 from boss.registry import initialize_registry, MemoryRegistry, SQLRegistry
-
-
-class SampleRegistry(Registry):
-    NAME = 'Sample'
-
-    @classmethod
-    def from_configs(cls, config, registry_conf):
-        return cls()
-
-    def get_state(self, task, params):
-        return {}
-
-    def update_state(self, task, params):
-        pass
 
 
 class RegistryTests(unittest.TestCase):
@@ -36,14 +22,10 @@ class RegistryTests(unittest.TestCase):
             SQLRegistry
         )
         self.assertRaises(
-            ImportError,
+            ValueError,
             initialize_registry, mock_config, {'type': 'registry.that.does.not:exist'}
         )
         self.assertRaises(
             ValueError,
             initialize_registry, mock_config, {'type': 'datetime:datetime'}
-        )
-        self.assertIsInstance(
-            initialize_registry(mock_config, {'type': '{}:SampleRegistry'.format(__name__)}),
-            SampleRegistry
         )

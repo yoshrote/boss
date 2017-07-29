@@ -34,23 +34,25 @@ class Configurator(object):
     @property
     def task_finders(self):
         if not self._task_finders:
-            self._task_finders = []
+            task_finders = []
             for task_conf in self.task_configs:
                 LOG.info('initializing task finder: %r', task_conf)
-                self._task_finders.append(
+                task_finders.append(
                     initialize_task_finder(self, task_conf)
                 )
+            self._task_finders = task_finders
         return self._task_finders
 
     @property
     def scope_finders(self):
         if not self._scope_finders:
-            self._scope_finders = []
+            scope_finders = []
             for scope_conf in self.scope_configs:
                 LOG.info('initializing scope finder: %r', scope_conf)
-                self._scope_finders.append(
+                scope_finders.append(
                     initialize_scope_finder(self, scope_conf)
                 )
+            self._scope_finders = scope_finders
         return self._scope_finders
 
     @classmethod

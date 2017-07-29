@@ -6,18 +6,15 @@ from .utils import get_class_from_type_value
 
 def initialize_scope_finder(config, scope_conf):
     return get_class_from_type_value(
-        'scope',
+        'scope_finder',
         ScopeFinder,
         scope_conf,
-        config,
-        globals()
+        config
     )
 
 
 class MemoryScopeFinder(ScopeFinder):
     """ScopeFinder whose scopes are enumerated in configs."""
-
-    NAME = "hardcoded"
 
     @classmethod
     def from_configs(cls, config, scope_conf):
@@ -46,21 +43,18 @@ class MemoryScopeFinder(ScopeFinder):
 class SQLScopeFinder(ScopeFinder):
     """ScopeFinder backed by an SQL Database."""
 
-    NAME = "sqlite"
-
     @classmethod
     def create_table(cls, connection):
+        cursor = connection.cursor()
         try:
-            cursor = connection.cursor()
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS scopes (
                 name TEXT PRIMARY KEY,
                 params TEXT,
             )
             """)
+        finally:
             cursor.close()
-        except:
-            pass
 
     @classmethod
     def from_configs(cls, config, scope_conf):
@@ -79,5 +73,9 @@ class SQLScopeFinder(ScopeFinder):
         self.query = "SELECT params FROM scope WHERE name=?"
 
     def find(self, name):
-        for row in self.connection.execute(self.query, (name,)):
-            yield json.loads(row['params'])
+        cursor = self.connection.cursor()
+        try:
+            for row in cursor.execute(self.query, (name,)):
+                yield json.loads(row['params'])
+        finally:
+            cursor.close()

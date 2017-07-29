@@ -6,7 +6,7 @@ import mock
 from boss.config import Configurator
 from boss.interfaces import Scheduler
 from boss.schedules import pick_schedule, RunEvery, RunAt
-from boss.utils import stringify_datetime
+from boss.utils import stringify_datetime, DT_FORMAT
 
 
 class SampleScheduler(Scheduler):
@@ -48,37 +48,40 @@ class SchedulerTests(unittest.TestCase):
 
     def test_run_at(self):
         grace = timedelta(minutes=5)
+        half_grace = grace / 2
+
         now = datetime(2017, 5, 23, 0, 0, 0)
 
         schedule = RunAt(time(hour=0, minute=0, second=0), grace)
 
         # initial run outside of grace
-        schedule.now = lambda: now - grace - grace
-        self.assertTrue(schedule.should_run({}))
+        schedule.now = lambda: now - grace
+        self.assertFalse(schedule.should_run({}))
+        schedule.now = lambda: now + grace
+        self.assertFalse(schedule.should_run({}))
+
         # initial run inside of grace
         schedule.now = lambda: now
         self.assertTrue(schedule.should_run({}))
-        schedule.now = lambda: now + grace
+        schedule.now = lambda: now + half_grace
         self.assertTrue(schedule.should_run({}))
 
         # last run inside grace; now inside grace
+        state = {'last_run': now.strftime(DT_FORMAT)}
+        schedule.now = lambda: now + half_grace
+        self.assertFalse(schedule.should_run(state))
+
         # last run inside grace; now outside grace
+        state = {'last_run': now.strftime(DT_FORMAT)}
+        schedule.now = lambda: now + grace * 2
+        self.assertFalse(schedule.should_run(state))
+
         # last run outside grace; now inside grace
+        state = {'last_run': (now - grace * 2).strftime(DT_FORMAT)}
+        schedule.now = lambda: now
+        self.assertTrue(schedule.should_run(state))
+
         # last run outside grace; now outside grace
-'''
-    def should_run(self, state):
-        now = self.now()
-        last_run = parse_datetime(state.get('last_run', self.DEFAULT_LAST_RUN))
-        target_time = datetime.combine(now.date(), self.target_time)
-
-        grace_period = target_time + self.grace
-
-        LOG.debug("now_within_grace = %r <= %r < %r", target_time, now, grace_period)
-        now_within_grace = target_time <= now < grace_period
-        if not last_run:
-            return now_within_grace
-
-        LOG.debug("last_run_within_grace = %r <= %r < %r", target_time, last_run, grace_period)
-        last_run_within_grace = target_time <= last_run < grace_period
-        return now_within_grace and not last_run_within_grace
-'''
+        state = {'last_run': (now - grace * 2).strftime(DT_FORMAT)}
+        schedule.now = lambda: now - grace * 2
+        self.assertFalse(schedule.should_run(state))

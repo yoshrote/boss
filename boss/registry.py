@@ -18,15 +18,12 @@ def initialize_registry(config, registry_conf):
         'registry',
         Registry,
         registry_conf,
-        config,
-        globals()
+        config
     )
 
 
 class MemoryRegistry(Registry):
     """An ephemeral Registry."""
-
-    NAME = "memory"
 
     @classmethod
     def from_configs(cls, config, registry_conf):
@@ -59,8 +56,6 @@ class MemoryRegistry(Registry):
 
 class SQLRegistry(Registry):
     """A sqlite backed Registry."""
-
-    NAME = "sqlite"
 
     @classmethod
     def create_table(cls, connection):
