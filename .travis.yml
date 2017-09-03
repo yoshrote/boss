@@ -8,6 +8,6 @@ before_script:
   - "pip install pytest pytest-cov python-coveralls"
 install: "pip install ."
 # command to run tests
-script: "py.test --cov boss --cov-report term-missing tests.py"
+script: "py.test --cov boss --cov-report term-missing tests"
 after_success:
   - "coveralls"
