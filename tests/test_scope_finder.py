@@ -60,8 +60,8 @@ class ScopeFinderTests(unittest.TestCase):
         ])
 
         scope_name = 'foo'
-        self.assertItemsEqual(
-            list(scope_finder.find(scope_name)),
+        self.assertEqual(
+            sorted(scope_finder.find(scope_name), key=lambda x: x['foo']),
             [{'foo': 1}, {'foo': 2}]
         )
 
@@ -81,8 +81,8 @@ class ScopeFinderTests(unittest.TestCase):
             mock_config,
             scope_config
         )
-        self.assertItemsEqual(
-            list(scope_finder.find('foo')),
+        self.assertEqual(
+            sorted(scope_finder.find('foo'), key=lambda x: x['foo']),
             [{'foo': 1}, {'foo': 2}]
         )
 

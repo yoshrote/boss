@@ -47,8 +47,8 @@ class TaskFinderTests(unittest.TestCase):
             {'task': json.dumps({'foo': 2})}
         ])
 
-        self.assertItemsEqual(
-            list(task_finder.find()),
+        self.assertEqual(
+            sorted(task_finder.find(), key=lambda x: x['foo']),
             [{'foo': 1}, {'foo': 2}]
         )
 
@@ -66,8 +66,8 @@ class TaskFinderTests(unittest.TestCase):
             mock_config,
             task_config
         )
-        self.assertItemsEqual(
-            list(task_finder.find()),
+        self.assertEqual(
+            sorted(task_finder.find(), key=lambda x: x['foo']),
             [{'foo': 1}, {'foo': 2}]
         )
 
