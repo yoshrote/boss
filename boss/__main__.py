@@ -31,4 +31,8 @@ def echo(params):
 
 
 app = MyApp(config, config.registry)
-app.run()
+try:
+	app.run()
+except KeyboardInterrupt:
+	pass
+logger.info('shutting down')

@@ -1,11 +1,12 @@
 import importlib
-import json
+import logging
 import pkg_resources
 from datetime import datetime, timedelta, time
 
 import requests
 
 DT_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
+LOG = logging.getLogger(__name__)
 
 
 def parse_timedelta(delta):
@@ -14,7 +15,7 @@ def parse_timedelta(delta):
 
 
 def parse_datetime(dt_stamp):
-    return datetime.strptime(dt_stamp, '%Y-%m-%dT%H:%M:%SZ')
+    return datetime.strptime(dt_stamp, DT_FORMAT)
 
 
 def parse_time(t_stamp):
@@ -23,10 +24,11 @@ def parse_time(t_stamp):
 
 
 def stringify_datetime(dt_stamp):
-    return dt_stamp.strftime('%Y-%m-%dT%H:%M:%SZ')
+    return dt_stamp.strftime(DT_FORMAT)
 
 
 def import_function(func):
+    LOG.debug("finding function %s", func)
     name, _, func_name = func.partition(':')
     module = importlib.import_module(name)
     try:
@@ -53,7 +55,9 @@ def class_is_subclass(value, target_klass):
 def get_class_from_type_value(type_name, target_klass, conf, config):
     klass_map = {
         entry_point.name: entry_point.load()
-        for entry_point in pkg_resources.iter_entry_points("boss_{}".format(type_name))
+        for entry_point in pkg_resources.iter_entry_points(
+            "boss_{}".format(type_name)
+        )
         if class_is_subclass(entry_point.load(), target_klass)
     }
 
@@ -78,4 +82,6 @@ class request_maker(object):
         self.target = target
 
     def __call__(self, params):
-        requests.post(self.target, data=json.dumps(params))
+        response = requests.post(self.target, json=params)
+        LOG.info("%s [%s]", self.target, response.status_code)
+        LOG.debug(response.content)

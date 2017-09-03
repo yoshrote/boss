@@ -20,7 +20,7 @@ class Configurator(object):
         self._task_finders = None
         self._scope_finders = None
 
-        for conn_name, values in (connections or {}).iteritems():
+        for conn_name, values in (connections or {}).items():
             if values['type'] == 'sqlite':
                 self.connections[conn_name] = sqlite3.connect(values['connection'])
 
