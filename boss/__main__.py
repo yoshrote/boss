@@ -9,14 +9,6 @@ logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
-parser = argparse.ArgumentParser(description='Make requests on a schedule.')
-parser.add_argument('config', metavar='CONFIG_FILE',
-                    help='the path to the configuration file')
-
-args = parser.parse_args()
-logger.info('Using config file: %s', args.config)
-config = Configurator.from_file(args.config)
-
 
 class MyApp(Application):
     Task = Task
@@ -30,9 +22,21 @@ def echo(params):
     print params
 
 
-app = MyApp(config, config.registry)
-try:
-	app.run()
-except KeyboardInterrupt:
-	pass
-logger.info('shutting down')
+def main():
+    parser = argparse.ArgumentParser(description='Make requests on a schedule.')
+    parser.add_argument('config', metavar='CONFIG_FILE',
+                        help='the path to the configuration file')
+
+    args = parser.parse_args()
+    logger.info('Using config file: %s', args.config)
+    config = Configurator.from_file(args.config)
+
+    app = MyApp(config, config.registry)
+    try:
+        app.run()
+    except KeyboardInterrupt:
+        pass
+    logger.info('shutting down')
+
+if __name__ == "__main__":
+    main()

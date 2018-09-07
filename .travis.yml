@@ -5,9 +5,9 @@ python:
 before_script:
   - "pip install mock"
   - "pip install 'coverage<4'"
-  - "pip install pytest pytest-cov python-coveralls"
+  - "pip install pytest pytest-cov codacy-coverage"
 install: "pip install ."
 # command to run tests
-script: "py.test --cov boss --cov-report term-missing tests"
+script: "pytest --cov boss --cov-report xml tests"
 after_success:
-  - "coveralls"
+  - "python-codacy-coverage -r coverage.xml"
