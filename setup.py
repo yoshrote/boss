@@ -19,7 +19,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'boss = boss.__main__',
+            'boss = boss.__main__:main',
         ],
         'boss_task_finder': [
             'hardcoded = boss.task_finder:MemoryTaskFinder',
