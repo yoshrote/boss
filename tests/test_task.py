@@ -25,10 +25,10 @@ class TestTask(unittest.TestCase):
             }
         }
         task = Task(config, task_config)
-        assert task.name == task_config["name"]
-        assert task.scope == task_config["scope"]
-        assert isinstance(task.scheduler, RunAt)
-        assert task.func is parse_time
+        self.assertEquals(task.name, task_config["name"])
+        self.assertEquals(task.scope, task_config["scope"])
+        self.assertIsInstance(task.scheduler, RunAt)
+        self.assertIs(task.func, parse_time)
         with mock.patch.object(task, "func") as mock_func:
             params = object()
             task.run(params)
@@ -49,10 +49,10 @@ class TestTask(unittest.TestCase):
             }
         }
         task = Task(config, task_config)
-        assert task.name == task_config["name"]
-        assert task.scope == task_config["scope"]
-        assert isinstance(task.scheduler, RunEvery)
-        assert isinstance(task.func, request_maker)
+        self.assertEquals(task.name, task_config["name"])
+        self.assertEquals(task.scope, task_config["scope"])
+        self.assertIsInstance(task.scheduler, RunEvery)
+        self.assertIsInstance(task.func, request_maker)
         with mock.patch.object(task, "func") as mock_func:
             params = object()
             task.run(params)

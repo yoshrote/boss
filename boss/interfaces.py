@@ -23,7 +23,7 @@ class ScopeFinder(object):
         raise NotImplementedError('from_configs')
 
     @abstractmethod
-    def find(self, task):  # pragma: no cover
+    def find(self, name):  # pragma: no cover
         raise NotImplementedError('find')
 
 

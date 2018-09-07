@@ -1,6 +1,6 @@
 import logging
 import time
-
+from .task import Task
 
 LOG = logging.getLogger(__name__)
 
@@ -8,7 +8,7 @@ LOG = logging.getLogger(__name__)
 class Application(object):
     """Configure and encapsulates the main loop."""
 
-    Task = None
+    Task = Task
 
     def __init__(self, config, registry):
         """
